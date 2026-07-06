@@ -24,14 +24,31 @@ export function useBoard() {
       });
     }
 
+    function onCardMoved({ cardId, toColumnId }) {
+          console.log("card:moved received", cardId, toColumnId); 
+    setBoard((prevBoard) => {
+        const newColumns = prevBoard.columns.map((col) => {
+        const filteredCardIds = col.cardIds.filter((id) => id !== cardId);
+
+        if (col.id === toColumnId) {
+            return { ...col, cardIds: [...filteredCardIds, cardId] };
+        }
+        return { ...col, cardIds: filteredCardIds };
+        });
+
+        return { ...prevBoard, columns: newColumns };
+    });
+    }
     socket.on("connect", onConnect);
     socket.on("board:state", onBoardState);
     socket.on("card:created", onCardCreated);
+    socket.on("card:moved", onCardMoved);
 
     return () => {
       socket.off("connect", onConnect);
       socket.off("board:state", onBoardState);
       socket.off("card:created", onCardCreated);
+      socket.off("card:moved", onCardMoved);
     };
   }, []);
 
@@ -39,5 +56,9 @@ export function useBoard() {
     socket.emit("card:create", { columnId, title });
   }
 
-  return { board, addCard };
+  function moveCard(cardId, toColumnId) {
+    socket.emit("card:move", { cardId, toColumnId });
+  }
+
+  return { board, addCard, moveCard };
 }
