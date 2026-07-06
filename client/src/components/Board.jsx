@@ -1,6 +1,6 @@
 import { Column } from "./Column";
 
-export function Board({ board, onAddCard }) {
+export function Board({ board, onAddCard, onMoveCard }) {
   if (!board) return <div>Loading board...</div>;
 
   return (
@@ -11,6 +11,7 @@ export function Board({ board, onAddCard }) {
           column={column}
           cards={board.cards}
           onAddCard={onAddCard}
+          onMoveCard={onMoveCard}
         />
       ))}
     </div>
