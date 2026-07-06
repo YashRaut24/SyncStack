@@ -33,6 +33,17 @@ io.on("connection", (socket) => {
     io.emit("card:created", {columnId, card});
   });
 
+  socket.on("card:move", ({cardId, toColumnId}) => {
+    board.columns.forEach((col) => {
+      col.cardIds = col.cardIds.filter((id) => id !== cardId);
+    })
+
+    const toColumn = board.columns.find((col) => col.id === toColumnId);
+    toColumn.cardIds.push(cardId);
+
+    io.emit("card:moved", {cardId, toColumnId});
+  });
+
   socket.on("disconnect", () => {
     console.log("Socket disconnected:", socket.id);
   });
