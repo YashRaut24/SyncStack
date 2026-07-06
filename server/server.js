@@ -22,6 +22,17 @@ io.on("connection", (socket) => {
 
   socket.emit("board:state", board);
 
+  socket.on("card:create", ({columnId, title}) => {
+    const cardId = "card-" + Date.now();
+    const card = { id: cardId, title};
+
+    board.cards[cardId] = card;
+    const column = board.columns.find((col) => col.id === columnId);
+    column.cardIds.push(cardId);
+
+    io.emit("card:created", {columnId, card});
+  });
+
   socket.on("disconnect", () => {
     console.log("Socket disconnected:", socket.id);
   });
