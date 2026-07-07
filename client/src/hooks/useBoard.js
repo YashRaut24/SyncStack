@@ -25,8 +25,8 @@ export function useBoard() {
     }
 
     function onCardMoved({ cardId, toColumnId }) {
-          console.log("card:moved received", cardId, toColumnId); 
-    setBoard((prevBoard) => {
+        console.log("card:moved received", cardId, toColumnId); 
+        setBoard((prevBoard) => {
         const newColumns = prevBoard.columns.map((col) => {
         const filteredCardIds = col.cardIds.filter((id) => id !== cardId);
 
@@ -39,16 +39,33 @@ export function useBoard() {
         return { ...prevBoard, columns: newColumns };
     });
     }
+
+    function onCardDeleted({ cardId }) {
+      setBoard((prevBoard) => {
+        const newColumns = prevBoard.columns.map((col) => ({
+          ...col,
+          cardIds: col.cardIds.filter((id) => id !== cardId),
+        }));
+
+        const newCards = { ...prevBoard.cards };
+        delete newCards[cardId];
+
+        return { ...prevBoard, columns: newColumns, cards: newCards };
+      });
+    }
+    
     socket.on("connect", onConnect);
     socket.on("board:state", onBoardState);
     socket.on("card:created", onCardCreated);
     socket.on("card:moved", onCardMoved);
+    socket.on("card:deleted", onCardDeleted);
 
     return () => {
       socket.off("connect", onConnect);
       socket.off("board:state", onBoardState);
       socket.off("card:created", onCardCreated);
       socket.off("card:moved", onCardMoved);
+      socket.off("card:deleted", onCardDeleted);
     };
   }, []);
 
@@ -60,5 +77,9 @@ export function useBoard() {
     socket.emit("card:move", { cardId, toColumnId });
   }
 
-  return { board, addCard, moveCard };
+  function deleteCard(cardId){
+    socket.emit("card:delete", {cardId});
+  }
+
+  return { board, addCard, moveCard, deleteCard };
 }
