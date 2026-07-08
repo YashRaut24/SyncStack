@@ -1,6 +1,6 @@
 import { Column } from "./Column";
 
-export function Board({ board, onAddCard, onMoveCard, onDeleteCard }) {
+export function Board({ board, onAddCard, onMoveCard, onDeleteCard, onUpdateCard }) {
   if (!board) return <div>Loading board...</div>;
 
   return (
@@ -13,6 +13,7 @@ export function Board({ board, onAddCard, onMoveCard, onDeleteCard }) {
           onAddCard={onAddCard}
           onMoveCard={onMoveCard}
           onDeleteCard={onDeleteCard}
+          onUpdateCard={onUpdateCard}
         />
       ))}
     </div>
