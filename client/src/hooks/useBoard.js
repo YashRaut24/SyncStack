@@ -40,6 +40,17 @@ export function useBoard() {
     });
     }
 
+    function onCardUpdated({ cardId, title }) {
+      setBoard((prevBoard) => {
+        const newCards = {
+          ...prevBoard.cards,
+          [cardId]: { ...prevBoard.cards[cardId], title },
+        };
+
+        return { ...prevBoard, cards: newCards };
+      });
+    }
+
     function onCardDeleted({ cardId }) {
       setBoard((prevBoard) => {
         const newColumns = prevBoard.columns.map((col) => ({
@@ -58,6 +69,7 @@ export function useBoard() {
     socket.on("board:state", onBoardState);
     socket.on("card:created", onCardCreated);
     socket.on("card:moved", onCardMoved);
+    socket.on("card:updated", onCardUpdated);
     socket.on("card:deleted", onCardDeleted);
 
     return () => {
@@ -65,6 +77,7 @@ export function useBoard() {
       socket.off("board:state", onBoardState);
       socket.off("card:created", onCardCreated);
       socket.off("card:moved", onCardMoved);
+      socket.off("card:updated", onCardUpdated);
       socket.off("card:deleted", onCardDeleted);
     };
   }, []);
@@ -77,9 +90,13 @@ export function useBoard() {
     socket.emit("card:move", { cardId, toColumnId });
   }
 
+  function updateCard(cardId, title) {
+    socket.emit("card:update", { cardId, title });
+  }
+
   function deleteCard(cardId){
     socket.emit("card:delete", {cardId});
   }
 
-  return { board, addCard, moveCard, deleteCard };
+  return { board, addCard, moveCard, deleteCard, updateCard };
 }
