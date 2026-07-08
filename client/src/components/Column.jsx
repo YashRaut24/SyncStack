@@ -1,6 +1,6 @@
 import { Card } from "./Card";
 
-export function Column({ column, cards, onAddCard, onMoveCard, onDeleteCard }) {
+export function Column({ column, cards, onAddCard, onMoveCard, onDeleteCard, onUpdateCard }) {
   function handleAddClick() {
     const title = prompt("Card title:");
     if (!title) return;
@@ -31,6 +31,7 @@ export function Column({ column, cards, onAddCard, onMoveCard, onDeleteCard }) {
           id={cardId}
           title={cards[cardId].title}
           onDelete={onDeleteCard}
+          onUpdate={onUpdateCard}
         />
       ))}
 
