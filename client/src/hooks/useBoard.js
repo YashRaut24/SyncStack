@@ -1,12 +1,15 @@
 import { useState, useEffect } from "react";
 import { socket } from "../socket";
 
-export function useBoard() {
+export function useBoard(boardId) {
   const [board, setBoard] = useState(null);
 
   useEffect(() => {
+    if (!boardId) return; 
+    
     function onConnect() {
       console.log("Connected:", socket.id);
+      socket.emit("join-board", { boardId });
     }
 
     function onBoardState(data) {
@@ -25,19 +28,16 @@ export function useBoard() {
     }
 
     function onCardMoved({ cardId, toColumnId }) {
-        console.log("card:moved received", cardId, toColumnId); 
-        setBoard((prevBoard) => {
+      setBoard((prevBoard) => {
         const newColumns = prevBoard.columns.map((col) => {
-        const filteredCardIds = col.cardIds.filter((id) => id !== cardId);
-
-        if (col.id === toColumnId) {
+          const filteredCardIds = col.cardIds.filter((id) => id !== cardId);
+          if (col.id === toColumnId) {
             return { ...col, cardIds: [...filteredCardIds, cardId] };
-        }
-        return { ...col, cardIds: filteredCardIds };
+          }
+          return { ...col, cardIds: filteredCardIds };
         });
-
         return { ...prevBoard, columns: newColumns };
-    });
+      });
     }
 
     function onCardUpdated({ cardId, title }) {
@@ -46,7 +46,6 @@ export function useBoard() {
           ...prevBoard.cards,
           [cardId]: { ...prevBoard.cards[cardId], title },
         };
-
         return { ...prevBoard, cards: newCards };
       });
     }
@@ -57,20 +56,22 @@ export function useBoard() {
           ...col,
           cardIds: col.cardIds.filter((id) => id !== cardId),
         }));
-
         const newCards = { ...prevBoard.cards };
         delete newCards[cardId];
-
         return { ...prevBoard, columns: newColumns, cards: newCards };
       });
     }
-    
+
     socket.on("connect", onConnect);
     socket.on("board:state", onBoardState);
     socket.on("card:created", onCardCreated);
     socket.on("card:moved", onCardMoved);
     socket.on("card:updated", onCardUpdated);
     socket.on("card:deleted", onCardDeleted);
+
+    if (socket.connected) {
+      onConnect();
+    }
 
     return () => {
       socket.off("connect", onConnect);
@@ -80,7 +81,7 @@ export function useBoard() {
       socket.off("card:updated", onCardUpdated);
       socket.off("card:deleted", onCardDeleted);
     };
-  }, []);
+  }, [boardId]);
 
   function addCard(columnId, title) {
     socket.emit("card:create", { columnId, title });
@@ -94,8 +95,8 @@ export function useBoard() {
     socket.emit("card:update", { cardId, title });
   }
 
-  function deleteCard(cardId){
-    socket.emit("card:delete", {cardId});
+  function deleteCard(cardId) {
+    socket.emit("card:delete", { cardId });
   }
 
   return { board, addCard, moveCard, deleteCard, updateCard };
