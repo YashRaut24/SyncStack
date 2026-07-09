@@ -16,6 +16,12 @@ export function Column({ column, cards, onAddCard, onMoveCard, onDeleteCard, onU
     onMoveCard(cardId, column.id);
   }
 
+  // Find every card whose columnId matches this column — replaces
+  // the old column.cardIds array entirely.
+  const cardsInThisColumn = Object.values(cards).filter(
+    (card) => card.columnId === column.id
+  );
+
   return (
     <div
       className="column"
@@ -25,11 +31,11 @@ export function Column({ column, cards, onAddCard, onMoveCard, onDeleteCard, onU
     >
       <h3>{column.title}</h3>
 
-      {column.cardIds.map((cardId) => (
+      {cardsInThisColumn.map((card) => (
         <Card
-          key={cardId}
-          id={cardId}
-          title={cards[cardId].title}
+          key={card._id}
+          id={card._id}
+          title={card.title}
           onDelete={onDeleteCard}
           onUpdate={onUpdateCard}
         />
