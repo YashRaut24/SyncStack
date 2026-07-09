@@ -5,60 +5,58 @@ export function useBoard(boardId) {
   const [board, setBoard] = useState(null);
 
   useEffect(() => {
-    if (!boardId) return; 
-    
+    if (!boardId) return;
+
     function onConnect() {
       console.log("Connected:", socket.id);
       socket.emit("join-board", { boardId });
     }
 
     function onBoardState(data) {
-      setBoard(data);
+      // Convert the array of card documents into a lookup object,
+      // keyed by MongoDB's real _id — keeps the rest of the app's
+      // update logic (spread + overwrite by key) exactly the same
+      // shape as before.
+      const cardsById = {};
+      data.cards.forEach((card) => {
+        cardsById[card._id] = card;
+      });
+
+      setBoard({ columns: data.columns, cards: cardsById });
     }
 
-    function onCardCreated({ columnId, card }) {
-      setBoard((prevBoard) => {
-        const newCards = { ...prevBoard.cards, [card.id]: card };
-        const newColumns = prevBoard.columns.map((col) => {
-          if (col.id !== columnId) return col;
-          return { ...col, cardIds: [...col.cardIds, card.id] };
-        });
-        return { ...prevBoard, columns: newColumns, cards: newCards };
-      });
+    function onCardCreated({ card }) {
+      setBoard((prevBoard) => ({
+        ...prevBoard,
+        cards: { ...prevBoard.cards, [card._id]: card },
+      }));
     }
 
     function onCardMoved({ cardId, toColumnId }) {
-      setBoard((prevBoard) => {
-        const newColumns = prevBoard.columns.map((col) => {
-          const filteredCardIds = col.cardIds.filter((id) => id !== cardId);
-          if (col.id === toColumnId) {
-            return { ...col, cardIds: [...filteredCardIds, cardId] };
-          }
-          return { ...col, cardIds: filteredCardIds };
-        });
-        return { ...prevBoard, columns: newColumns };
-      });
+      setBoard((prevBoard) => ({
+        ...prevBoard,
+        cards: {
+          ...prevBoard.cards,
+          [cardId]: { ...prevBoard.cards[cardId], columnId: toColumnId },
+        },
+      }));
     }
 
     function onCardUpdated({ cardId, title }) {
-      setBoard((prevBoard) => {
-        const newCards = {
+      setBoard((prevBoard) => ({
+        ...prevBoard,
+        cards: {
           ...prevBoard.cards,
           [cardId]: { ...prevBoard.cards[cardId], title },
-        };
-        return { ...prevBoard, cards: newCards };
-      });
+        },
+      }));
     }
 
     function onCardDeleted({ cardId }) {
       setBoard((prevBoard) => {
-        const newColumns = prevBoard.columns.map((col) => ({
-          ...col,
-          cardIds: col.cardIds.filter((id) => id !== cardId),
-        }));
         const newCards = { ...prevBoard.cards };
         delete newCards[cardId];
-        return { ...prevBoard, columns: newColumns, cards: newCards };
+        return { ...prevBoard, cards: newCards };
       });
     }
 
