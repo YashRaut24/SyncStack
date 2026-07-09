@@ -5,91 +5,78 @@ const { Server } = require("socket.io");
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
-  cors: { origin: "http://localhost:5173" } // Vite's default dev port
+  cors: { origin: "http://localhost:5173" } 
 });
 
-function createNewBoard() {
-  return {
-    columns: [
-      {id: "col-1", title: "To Do", cardIds: []},
-      {id: "col-2", title: "In Progress", cardIds: []},
-      {id: "col-3", title: "Done", cardIds: []},
-    ],
-    cards: {},
-  };
-}
+require("dotenv").config();
+const mongoose = require("mongoose");
+const Board = require("./models/Board");
+const Card = require("./models/Card");
 
-const boards = {}
-
-function getOrCreateBoard(boardId){
-  if(!boards[boardId]){
-    boards[boardId] = createNewBoard();
-  }
-
-  return boards[boardId];
-}
+mongoose
+  .connect(process.env.MONGO_URI)
+  .then(() => console.log("MongoDB connected"))
+  .catch((err) => console.error("MongoDB connection error:", err));
 
 
-io.on("connection", (socket) => {
-  console.log("Socket connected:", socket.id);
+  io.on("connection", (socket) => {
+    console.log("Socket connected:", socket.id);
 
-  let currentBoardId = null; 
+    let currentBoardId = null; 
 
-socket.on("join-board", ({ boardId }) => {
-  console.log("join-board received:", boardId); // temp debug
-  currentBoardId = boardId;
-  socket.join(boardId);
+    socket.on("join-board", async ({ boardId }) => {
+      currentBoardId = boardId;
+      socket.join(boardId);
 
-  const board = getOrCreateBoard(boardId);
-  console.log("sending board:state", board); // temp debug
-  socket.emit("board:state", board);
-});
-  socket.on("card:create", ({ columnId, title }) => {
-    const board = getOrCreateBoard(currentBoardId);
-    const cardId = "card-" + Date.now();
-    const card = { id: cardId, title };
+      let board = await Board.findOne({ boardId });
 
-    board.cards[cardId] = card;
-    const column = board.columns.find((col) => col.id === columnId);
-    column.cardIds.push(cardId);
+      if (!board) {
+        board = await Board.create({
+          boardId,
+          columns: [
+            { id: "col-1", title: "To Do" },
+            { id: "col-2", title: "In Progress" },
+            { id: "col-3", title: "Done" },
+          ],
+        });
+      }
 
-    io.to(currentBoardId).emit("card:created", { columnId, card });
-  });
+      const cards = await Card.find({ boardId });
 
-  socket.on("card:move", ({ cardId, toColumnId }) => {
-    const board = getOrCreateBoard(currentBoardId);
-    board.columns.forEach((col) => {
-      col.cardIds = col.cardIds.filter((id) => id !== cardId);
+      socket.emit("board:state", { columns: board.columns, cards });
     });
 
-    const toColumn = board.columns.find((col) => col.id === toColumnId);
-    toColumn.cardIds.push(cardId);
+    socket.on("card:create", async ({ columnId, title }) => {
+      const card = await Card.create({
+        boardId: currentBoardId,
+        columnId,
+        title,
+      });
 
-    io.to(currentBoardId).emit("card:moved", { cardId, toColumnId });
-  });
-
-  socket.on("card:update", ({ cardId, title }) => {
-    const board = getOrCreateBoard(currentBoardId);
-    const card = board.cards[cardId];
-    if (!card) return;
-
-    card.title = title;
-    io.to(currentBoardId).emit("card:updated", { cardId, title });
-  });
-
-  socket.on("card:delete", ({ cardId }) => {
-    const board = getOrCreateBoard(currentBoardId);
-    board.columns.forEach((col) => {
-      col.cardIds = col.cardIds.filter((id) => id !== cardId);
+      io.to(currentBoardId).emit("card:created", { card });
     });
-    delete board.cards[cardId];
 
-    io.to(currentBoardId).emit("card:deleted", { cardId });
-  });
+    socket.on("card:move", async ({ cardId, toColumnId }) => {
+      await Card.findByIdAndUpdate(cardId, { columnId: toColumnId });
 
-  socket.on("disconnect", () => {
-    console.log("Socket disconnected:", socket.id);
-  });
+      io.to(currentBoardId).emit("card:moved", { cardId, toColumnId });
+    });
+
+    socket.on("card:update", async ({ cardId, title }) => {
+      await Card.findByIdAndUpdate(cardId, { title });
+
+      io.to(currentBoardId).emit("card:updated", { cardId, title });
+    });
+
+    socket.on("card:delete", async ({ cardId }) => {
+      await Card.findByIdAndDelete(cardId);
+
+      io.to(currentBoardId).emit("card:deleted", { cardId });
+    });
+
+    socket.on("disconnect", () => {
+      console.log("Socket disconnected:", socket.id);
+    });
 });
 
 const PORT = 4000;
