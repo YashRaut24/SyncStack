@@ -5,13 +5,14 @@ const { Server } = require("socket.io");
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
-  cors: { origin: "http://localhost:5173" } 
+  cors: { origin: ["http://localhost:5173", "http://localhost:5174"] }
 });
 
 require("dotenv").config();
 const mongoose = require("mongoose");
 const Board = require("./models/Board");
 const Card = require("./models/Card");
+const presenceByBoard = {};
 
 mongoose
   .connect(process.env.MONGO_URI)
@@ -23,9 +24,12 @@ mongoose
     console.log("Socket connected:", socket.id);
 
     let currentBoardId = null; 
+    let currentUsername = null;
 
-    socket.on("join-board", async ({ boardId }) => {
+    socket.on("join-board", async ({ boardId, username }) => {
+      console.log("join-board received:", boardId, username);
       currentBoardId = boardId;
+      currentUsername = username;
       socket.join(boardId);
 
       let board = await Board.findOne({ boardId });
@@ -42,8 +46,15 @@ mongoose
       }
 
       const cards = await Card.find({ boardId });
-
       socket.emit("board:state", { columns: board.columns, cards });
+
+      if(!presenceByBoard[boardId]){
+        presenceByBoard[boardId] = {};
+      }
+
+      presenceByBoard[boardId][socket.id] = username;
+
+      io.to(boardId).emit("presence:update", Object.values(presenceByBoard[boardId]));
     });
 
     socket.on("card:create", async ({ columnId, title }) => {
@@ -76,6 +87,14 @@ mongoose
 
     socket.on("disconnect", () => {
       console.log("Socket disconnected:", socket.id);
+
+      if(currentBoardId && presenceByBoard[currentBoardId]){
+        delete presenceByBoard[currentBoardId][socket.id];
+        io.to(currentBoardId).emit(
+          "presence:update",
+          Object.values(presenceByBoard[currentBoardId])
+        );
+      }
     });
 });
 
