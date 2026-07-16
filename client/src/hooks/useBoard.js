@@ -1,27 +1,23 @@
 import { useState, useEffect } from "react";
 import { socket } from "../socket";
 
-export function useBoard(boardId) {
+export function useBoard(boardId, username) {
   const [board, setBoard] = useState(null);
+  const [presence, setPresence] = useState([]);
 
   useEffect(() => {
     if (!boardId) return;
 
     function onConnect() {
       console.log("Connected:", socket.id);
-      socket.emit("join-board", { boardId });
+      socket.emit("join-board", { boardId, username });
     }
 
     function onBoardState(data) {
-      // Convert the array of card documents into a lookup object,
-      // keyed by MongoDB's real _id — keeps the rest of the app's
-      // update logic (spread + overwrite by key) exactly the same
-      // shape as before.
       const cardsById = {};
       data.cards.forEach((card) => {
         cardsById[card._id] = card;
       });
-
       setBoard({ columns: data.columns, cards: cardsById });
     }
 
@@ -60,12 +56,17 @@ export function useBoard(boardId) {
       });
     }
 
+    function onPresenceUpdate(usernames) {
+      setPresence(usernames);
+    }
+
     socket.on("connect", onConnect);
     socket.on("board:state", onBoardState);
     socket.on("card:created", onCardCreated);
     socket.on("card:moved", onCardMoved);
     socket.on("card:updated", onCardUpdated);
     socket.on("card:deleted", onCardDeleted);
+    socket.on("presence:update", onPresenceUpdate);
 
     if (socket.connected) {
       onConnect();
@@ -78,8 +79,9 @@ export function useBoard(boardId) {
       socket.off("card:moved", onCardMoved);
       socket.off("card:updated", onCardUpdated);
       socket.off("card:deleted", onCardDeleted);
+      socket.off("presence:update", onPresenceUpdate);
     };
-  }, [boardId]);
+  }, [boardId, username]);
 
   function addCard(columnId, title) {
     socket.emit("card:create", { columnId, title });
@@ -97,5 +99,5 @@ export function useBoard(boardId) {
     socket.emit("card:delete", { cardId });
   }
 
-  return { board, addCard, moveCard, deleteCard, updateCard };
+  return { board, addCard, moveCard, deleteCard, updateCard, presence };
 }
