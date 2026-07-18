@@ -29,7 +29,12 @@ export function Column({ column, cards, onAddCard, onMoveCard, onDeleteCard, onU
       onDragOver={handleDragOver}
       onDrop={handleDrop}
     >
-      <h3>{column.title}</h3>
+      <h3>
+        <span className={`status-dot ${
+          column.id === "col-1" ? "todo" : column.id === "col-2" ? "inprogress" : "done"
+        }`}></span>
+        {column.title}
+      </h3>
 
       {cardsInThisColumn.map((card) => (
         <Card
