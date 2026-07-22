@@ -5,7 +5,14 @@ const { Server } = require("socket.io");
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
-  cors: { origin: ["http://localhost:5173", "http://localhost:5174"] }
+  cors: {
+    origin: [
+      "http://localhost:5173",
+      "http://localhost:5174",
+      process.env.CLIENT_URL,
+    ],
+    methods: ["GET", "POST"],
+  },
 });
 
 require("dotenv").config();
@@ -98,7 +105,8 @@ mongoose
     });
 });
 
-const PORT = 4000;
+const PORT = process.env.PORT || 4000;
+
 server.listen(PORT, () => {
   console.log(`SyncStack server running on port ${PORT}`);
 });
