@@ -1,7 +1,13 @@
 import { Column } from "./Column";
 
 export function Board({ board, onAddCard, onMoveCard, onDeleteCard, onUpdateCard }) {
-  if (!board) return <div>Loading board...</div>;
+  if (!board) {
+    return <div className="board-loading">Opening the ledger…</div>;
+  }
+
+  if (!board.columns || board.columns.length === 0) {
+    return <div className="board-empty">No columns on this board yet.</div>;
+  }
 
   return (
     <div className="board">
