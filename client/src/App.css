@@ -22,6 +22,7 @@
   --status-todo: #8a8778;
   --status-inprogress: #3a6b8c;
   --status-done: #3d7a5c;
+  --text-color : rgb(255, 150, 79);
 }
 
 [data-theme="dark"] {
@@ -40,6 +41,7 @@
   --status-todo: #928d81;
   --status-inprogress: #6ba3c9;
   --status-done: #63b98a;
+  --text-color : rgb(177, 71, 0);
 }
 
 * {
@@ -562,10 +564,10 @@ body {
   width: 100%;
   margin-top: 2px;
   padding: 7px 8px;
-  background: transparent;
+  background: var();
   border: none;
   border-radius: var(--radius);
-  color: var(--text-secondary);
+  color: var(--text-color);
   cursor: pointer;
   font-size: 12px;
   font-family: var(--font-mono);
