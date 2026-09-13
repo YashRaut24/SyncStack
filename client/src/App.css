@@ -18,6 +18,9 @@
   --border-strong: rgba(28, 28, 26, 0.16);
   --accent: #b5502f;
   --accent-soft: rgba(181, 80, 47, 0.1);
+  --orange: #c05621;
+  --orange-hover: #a3450f;
+  --orange-text: #ffffff;
   --shadow: rgba(28, 28, 26, 0.06);
   --status-todo: #8a8778;
   --status-inprogress: #3a6b8c;
@@ -36,6 +39,9 @@
   --border-strong: rgba(255, 255, 255, 0.16);
   --accent: #d97a54;
   --accent-soft: rgba(217, 122, 84, 0.15);
+  --orange: #f97316;
+  --orange-hover: #fb8c3c;
+  --orange-text: #1a1613;
   --shadow: rgba(0, 0, 0, 0.3);
   --status-todo: #928d81;
   --status-inprogress: #6ba3c9;
@@ -562,18 +568,24 @@ body {
   width: 100%;
   margin-top: 2px;
   padding: 7px 8px;
-  background: transparent;
+  background: var(--orange);
   border: none;
   border-radius: var(--radius);
-  color: var(--text-secondary);
+  color: var(--orange-text);
   cursor: pointer;
   font-size: 12px;
+  font-weight: 600;
   font-family: var(--font-mono);
   text-align: left;
   transition: background 0.12s var(--ease), color 0.12s var(--ease);
 }
 
 .add-card-trigger:hover {
-  background: var(--bg-hover);
-  color: var(--text);
+  background: var(--orange-hover);
+  color: var(--orange-text);
+}
+
+.add-card-trigger:focus-visible {
+  outline: 2px solid var(--orange);
+  outline-offset: 2px;
 }
